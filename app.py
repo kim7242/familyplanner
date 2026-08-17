@@ -3,7 +3,8 @@ from streamlit_calendar import calendar
 from datetime import datetime, timedelta
 import requests
 
-st.set_page_config(page_title="우리 가족 플래너", page_icon="👨‍👩‍👧‍👦", layout="wide")
+# 아이폰 모바일 최적화 (모바일에서 화면을 꽉 채우고 상하 여백을 줄임)
+st.set_page_config(page_title="우리 가족 플래너", page_icon="👨‍👩‍👧‍👦", layout="centered", initial_sidebar_state="collapsed")
 
 st.markdown("""
 <head>
@@ -11,7 +12,14 @@ st.markdown("""
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="가족 플래너">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
+<style>
+    /* 아이폰 웹뷰 상하 여백 및 버튼 압축 */
+    .block-container { padding-top: 0.8rem; padding-left: 0.8rem; padding-right: 0.8rem; padding-bottom: 2rem; }
+    .stCheckbox { margin-top: -6px; margin-bottom: -6px; }
+    div.stButton > button { padding: 4px 8px !important; font-size: 0.85rem !important; min-height: 32px !important; }
+</style>
 """, unsafe_allow_html=True)
 
 DB_URL = "https://familyplanners-a98b5-default-rtdb.firebaseio.com"
@@ -110,10 +118,10 @@ def select_weekly_date(date_str):
     st.session_state.selected_weekly_date = date_str
 
 def render_task(d_str, j, task, prefix):
-    c1, c2, c3 = st.columns([6.5, 1.5, 2.0])
+    c1, c2, c3 = st.columns([6, 1.2, 1.2])
     with c1:
         text = f"~~{task['text']}~~" if task['done'] else task['text']
-        st.checkbox(text, value=task['done'], key=f"chk_{prefix}t_{d_str}_{j}", on_change=toggle_task, args=(d_str, j))
+        st.checkbox(text, value=task['done'], key=f"chk_{prefix}t_{d_str}_{j}", on_change=toggle_task, args=(d_str, j), label_visibility="collapsed")
     with c2:
         if st.button("⭕", key=f"o_{prefix}t_{d_str}_{j}"):
             toggle_task(d_str, j)
@@ -124,10 +132,10 @@ def render_task(d_str, j, task, prefix):
             st.rerun()
 
 def render_supply(d_str, cat_name, j, item, prefix):
-    c1, c2, c3 = st.columns([6.5, 1.5, 2.0])
+    c1, c2, c3 = st.columns([6, 1.2, 1.2])
     with c1:
         text = f"~~{item['text']}~~" if item['done'] else item['text']
-        st.checkbox(text, value=item['done'], key=f"chk_{prefix}s_{d_str}_{cat_name}_{j}", on_change=toggle_supply, args=(d_str, cat_name, j))
+        st.checkbox(text, value=item['done'], key=f"chk_{prefix}s_{d_str}_{cat_name}_{j}", on_change=toggle_supply, args=(d_str, cat_name, j), label_visibility="collapsed")
     with c2:
         if st.button("⭕", key=f"o_{prefix}s_{d_str}_{cat_name}_{j}"):
             toggle_supply(d_str, cat_name, j)
@@ -138,20 +146,18 @@ def render_supply(d_str, cat_name, j, item, prefix):
             st.rerun()
 
 # ---------------------------------------------------------
-# 3. 상단 메뉴바
+# 3. 상단 메뉴바 (모바일 압축형)
 # ---------------------------------------------------------
-col1, col2 = st.columns([8, 2])
-with col1: st.title("우리 가족 플래너 👨‍👩‍👧‍👦")
-with col2:
-    st.write("") 
-    btn_text = "📅 월간 달력" if st.session_state.view_mode == '주간' else "📝 주간 플래너"
-    
+top_c1, top_c2 = st.columns([6, 4])
+with top_c1: 
+    st.markdown("#### 👨‍👩‍👧‍👦 가족 플래너")
+with top_c2:
+    btn_text = "📅 월간" if st.session_state.view_mode == '주간' else "📝 주간"
     if st.session_state.view_mode != '설정':
-        c2_1, c2_2 = st.columns(2)
-        with c2_1:
-            st.button(btn_text, on_click=toggle_view, use_container_width=True)
-        with c2_2:
-            if st.button("⚙️ 준비물 템플릿 설정", use_container_width=True):
+        sub_c1, sub_c2 = st.columns(2)
+        with sub_c1: st.button(btn_text, on_click=toggle_view, use_container_width=True)
+        with sub_c2: 
+            if st.button("⚙️", use_container_width=True, help="템플릿 설정"):
                 st.session_state.view_mode = '설정'
                 st.rerun()
     else:
@@ -164,7 +170,6 @@ st.write("---")
 # 4. 화면 1: 주간 플래너
 # ---------------------------------------------------------
 if st.session_state.view_mode == '주간':
-    
     today_in_view = datetime.today() + timedelta(weeks=st.session_state.week_offset)
     view_month = today_in_view.month
     
@@ -175,10 +180,10 @@ if st.session_state.view_mode == '주간':
         
     week_num = get_week_of_month(today_in_view)
     
-    nav_c1, nav_c2, nav_c3 = st.columns([1, 8, 1])
-    with nav_c1: st.button("◀ 이전 주", on_click=change_week, args=(-1,), use_container_width=True)
-    with nav_c2: st.subheader(f"📅 {view_month}월 {week_num}주차 플래너 & 할 일 목록", anchor=False)
-    with nav_c3: st.button("다음 주 ▶", on_click=change_week, args=(1,), use_container_width=True)
+    nav_c1, nav_c2, nav_c3 = st.columns([2, 6, 2])
+    with nav_c1: st.button("◀", on_click=change_week, args=(-1,), use_container_width=True)
+    with nav_c2: st.markdown(f"<div style='text-align:center; font-weight:bold;'>📅 {view_month}월 {week_num}주차</div>", unsafe_allow_html=True)
+    with nav_c3: st.button("▶", on_click=change_week, args=(1,), use_container_width=True)
     
     start_of_week = today_in_view - timedelta(days=today_in_view.weekday())
     day_names = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
@@ -203,147 +208,65 @@ if st.session_state.view_mode == '주간':
             
     progress_percent = int((done_items / total_items) * 100) if total_items > 0 else 0
     
-    st.markdown(f"**🌟 오늘의 목표 달성률 ({real_today_str}) : {progress_percent}%**")
+    st.markdown(f"**🌟 오늘({real_today_str}) 달성률 : {progress_percent}%**")
     st.progress(progress_percent / 100.0)
     st.write("---")
     
-    row1_c1, row1_c2, row1_c3, row1_c4 = st.columns(4)
-    cols1 = [row1_c1, row1_c2, row1_c3]
-    
-    for i in range(3):
-        with cols1[i]:
-            with st.container(border=True):
-                d_str = days_data[i]["str"]
-                
-                btn_type = "primary" if st.session_state.selected_weekly_date == d_str else "secondary"
-                st.button(f"{days_data[i]['display']} {days_data[i]['name']}", key=f"btn_{d_str}", type=btn_type, use_container_width=True, on_click=select_weekly_date, args=(d_str,))
-                
-                for j, task in enumerate(st.session_state.tasks.get(d_str, [])):
-                    render_task(d_str, j, task, "w1")
-                
-                day_sups = st.session_state.supplies.get(d_str, {})
-                for cat_name, items in day_sups.items():
-                    is_all_done = len(items) > 0 and all(item['done'] for item in items)
-                    prefix = "🔵 " if is_all_done else ""
-                    st.markdown(f"**{prefix}{cat_name}**")
-                            
-                with st.popover("+ 할 일 추가", use_container_width=True):
-                    with st.form(key=f"form_{d_str}", clear_on_submit=True):
-                        new_task = st.text_input("새로운 할 일 입력")
-                        if st.form_submit_button("추가"):
-                            if new_task:
-                                if d_str not in st.session_state.tasks: st.session_state.tasks[d_str] = []
-                                st.session_state.tasks[d_str].append({"text": new_task, "done": False})
-                                save_tasks_to_db()
-                                st.rerun()
-
-    with row1_c4:
-        with st.container(border=False):
-            st.markdown("##### 🎒 선택한 날짜 준비물")
-            sel_d = st.session_state.selected_weekly_date
-            if not sel_d: 
-                st.info("👈 날짜 버튼을 누르면 상세 리스트가 나타납니다.")
-            else:
-                day_sups = st.session_state.supplies.get(sel_d, {})
-                if not day_sups:
-                    st.write(f"{sel_d} 엔 챙길 준비물이 없습니다.")
-                else:
-                    st.caption(f"{sel_d} 상세 리스트")
-                    for cat_name, items in day_sups.items():
-                        is_all_done = len(items) > 0 and all(item['done'] for item in items)
-                        prefix = "🔵 " if is_all_done else ""
-                        st.write(f"**{prefix}{cat_name}**")
-                        for j, item in enumerate(items):
-                            render_supply(sel_d, cat_name, j, item, "w_sel")
-
-    row2_c1, row2_c2, row2_c3, row2_c4 = st.columns(4)
-    cols2 = [row2_c1, row2_c2]
-    
-    for i in range(2):
-        day_idx = i + 3
-        with cols2[i]:
-            with st.container(border=True):
-                d_str = days_data[day_idx]["str"]
-                
-                btn_type = "primary" if st.session_state.selected_weekly_date == d_str else "secondary"
-                st.button(f"{days_data[day_idx]['display']} {days_data[day_idx]['name']}", key=f"btn_{d_str}", type=btn_type, use_container_width=True, on_click=select_weekly_date, args=(d_str,))
-                
-                for j, task in enumerate(st.session_state.tasks.get(d_str, [])):
-                    render_task(d_str, j, task, "w2")
-                
-                day_sups = st.session_state.supplies.get(d_str, {})
-                for cat_name, items in day_sups.items():
-                    is_all_done = len(items) > 0 and all(item['done'] for item in items)
-                    prefix = "🔵 " if is_all_done else ""
-                    st.markdown(f"**{prefix}{cat_name}**")
-                        
-                with st.popover("+ 할 일 추가", use_container_width=True):
-                    with st.form(key=f"form_{d_str}", clear_on_submit=True):
-                        new_task = st.text_input("새로운 할 일 입력")
-                        if st.form_submit_button("추가"):
-                            if new_task:
-                                if d_str not in st.session_state.tasks: st.session_state.tasks[d_str] = []
-                                st.session_state.tasks[d_str].append({"text": new_task, "done": False})
-                                save_tasks_to_db()
-                                st.rerun()
-                    
-    with row2_c3:
+    # 요일별 카드 세로 정렬 (모바일 가독성 극대화)
+    for i, day_info in enumerate(days_data):
+        d_str = day_info["str"]
+        is_selected = (st.session_state.selected_weekly_date == d_str)
+        
         with st.container(border=True):
-            sat_str = days_data[5]["str"]
-            sat_type = "primary" if st.session_state.selected_weekly_date == sat_str else "secondary"
-            st.button(f"{days_data[5]['display']} 토요일", key=f"btn_{sat_str}", type=sat_type, use_container_width=True, on_click=select_weekly_date, args=(sat_str,))
-                
-            for j, task in enumerate(st.session_state.tasks.get(sat_str, [])):
-                render_task(sat_str, j, task, "w_sat")
-            for cat_name, items in st.session_state.supplies.get(sat_str, {}).items():
-                is_all_done = len(items) > 0 and all(item['done'] for item in items)
-                prefix = "🔵 " if is_all_done else ""
-                st.markdown(f"**{prefix}{cat_name}**")
-                
-            st.write("---") 
+            btn_label = f"{day_info['display']} {day_info['name']}"
+            btn_type = "primary" if is_selected else "secondary"
+            if st.button(btn_label, key=f"btn_{d_str}", type=btn_type, use_container_width=True, on_click=select_weekly_date, args=(d_str,)):
+                pass
             
-            sun_str = days_data[6]["str"]
-            sun_type = "primary" if st.session_state.selected_weekly_date == sun_str else "secondary"
-            st.button(f"{days_data[6]['display']} 일요일", key=f"btn_{sun_str}", type=sun_type, use_container_width=True, on_click=select_weekly_date, args=(sun_str,))
+            tasks = st.session_state.tasks.get(d_str, [])
+            for j, task in enumerate(tasks):
+                render_task(d_str, j, task, f"w_{i}")
                 
-            for j, task in enumerate(st.session_state.tasks.get(sun_str, [])):
-                render_task(sun_str, j, task, "w_sun")
-            for cat_name, items in st.session_state.supplies.get(sun_str, {}).items():
+            day_sups = st.session_state.supplies.get(d_str, {})
+            for cat_name, items in day_sups.items():
                 is_all_done = len(items) > 0 and all(item['done'] for item in items)
                 prefix = "🔵 " if is_all_done else ""
                 st.markdown(f"**{prefix}{cat_name}**")
                 
-            with st.popover("+ 주말 할 일 추가", use_container_width=True):
-                with st.form(key="form_weekend", clear_on_submit=True):
-                    new_sat = st.text_input("토요일 할 일")
-                    new_sun = st.text_input("일요일 할 일")
+            with st.popover("+ 할 일 추가", use_container_width=True):
+                with st.form(key=f"form_{d_str}", clear_on_submit=True):
+                    new_task = st.text_input("새로운 할 일 입력")
                     if st.form_submit_button("추가"):
-                        updated = False
-                        if new_sat:
-                            if sat_str not in st.session_state.tasks: st.session_state.tasks[sat_str] = []
-                            st.session_state.tasks[sat_str].append({"text": new_sat, "done": False})
-                            updated = True
-                        if new_sun:
-                            if sun_str not in st.session_state.tasks: st.session_state.tasks[sun_str] = []
-                            st.session_state.tasks[sun_str].append({"text": new_sun, "done": False})
-                            updated = True
-                        if updated:
+                        if new_task:
+                            if d_str not in st.session_state.tasks: st.session_state.tasks[d_str] = []
+                            st.session_state.tasks[d_str].append({"text": new_task, "done": False})
                             save_tasks_to_db()
                             st.rerun()
-                
-    with row2_c4:
-        with st.container(border=False):
-            sel_d = st.session_state.selected_weekly_date
-            if not sel_d:
-                st.markdown("##### 📝 요일별 메모장")
-                st.info("👈 날짜 버튼을 누르면 해당 날짜의 메모를 띄워줍니다.")
-            else:
-                st.markdown(f"##### 📝 {sel_d} 메모장")
-                note_content = st.session_state.notes.get(sel_d, "")
-                def update_notes():
-                    st.session_state.notes[sel_d] = st.session_state[f"note_{sel_d}"]
-                    save_notes_to_db()
-                st.text_area("자유롭게 적어주세요 (자동 저장)", value=note_content, key=f"note_{sel_d}", height=200, on_change=update_notes)
+
+    st.write("---")
+    sel_d = st.session_state.selected_weekly_date
+    if sel_d:
+        st.markdown(f"##### 🎒 {sel_d} 상세 준비물")
+        day_sups = st.session_state.supplies.get(sel_d, {})
+        if not day_sups:
+            st.info("등록된 준비물이 없습니다.")
+        else:
+            for cat_name, items in day_sups.items():
+                is_all_done = len(items) > 0 and all(item['done'] for item in items)
+                prefix = "🔵 " if is_all_done else ""
+                st.markdown(f"**{prefix}{cat_name}**")
+                for j, item in enumerate(items):
+                    render_supply(sel_d, cat_name, j, item, "w_sel")
+                    
+        st.write("")
+        st.markdown(f"##### 📝 {sel_d} 메모장")
+        note_content = st.session_state.notes.get(sel_d, "")
+        def update_notes():
+            st.session_state.notes[sel_d] = st.session_state[f"note_{sel_d}"]
+            save_notes_to_db()
+        st.text_area("자유롭게 적어주세요", value=note_content, key=f"note_{sel_d}", height=120, on_change=update_notes)
+    else:
+        st.info("👆 위 요일 버튼을 누르면 해당 날짜의 상세 준비물과 메모장이 나타납니다.")
 
 # ---------------------------------------------------------
 # 5. 화면 2: 월간 달력
@@ -365,7 +288,7 @@ elif st.session_state.view_mode == '월간':
 
     calendar_options = {
         "headerToolbar": {"left": "prev,next today", "center": "title", "right": ""},
-        "initialView": "dayGridMonth", "selectable": True, "height": 550,
+        "initialView": "dayGridMonth", "selectable": True, "height": 420,
         "timeZone": "Asia/Seoul", "locale": "ko" 
     }
 
@@ -383,7 +306,7 @@ elif st.session_state.view_mode == '월간':
         
         action_c1, action_c2 = st.columns(2)
         with action_c1:
-            with st.popover("➕ 새로운 할 일 직접 입력", use_container_width=True):
+            with st.popover("➕ 할 일 입력", use_container_width=True):
                 with st.form(key=f"form_month_{clicked_date}", clear_on_submit=True):
                     new_task = st.text_input("할 일을 입력하세요")
                     if st.form_submit_button("추가"):
@@ -394,17 +317,16 @@ elif st.session_state.view_mode == '월간':
                             st.rerun()
         
         with action_c2:
-            with st.popover("⚡ 준비물(템플릿) 불러오기", use_container_width=True):
-                st.write("챙길 항목만 선택 후 **적용하기**를 누르세요.")
+            with st.popover("⚡ 준비물 불러오기", use_container_width=True):
+                st.write("항목 선택 후 적용")
                 for tmpl_name, tmpl_items in st.session_state.templates.items():
                     with st.expander(tmpl_name):
-                        with st.form(f"form_{clicked_date}_{tmpl_name}"):
+                        with st.form(key=f"form_{clicked_date}_{tmpl_name}"):
                             selected_items = []
                             for item in tmpl_items:
                                 if st.checkbox(item, value=True, key=f"chk_{clicked_date}_{tmpl_name}_{item}"):
                                     selected_items.append(item)
-                            
-                            if st.form_submit_button("선택한 항목만 적용하기"):
+                            if st.form_submit_button("적용하기"):
                                 add_supplies(clicked_date, tmpl_name, selected_items)
                                 st.rerun()
         st.write("---")
@@ -412,67 +334,57 @@ elif st.session_state.view_mode == '월간':
         tasks_for_date = st.session_state.tasks.get(clicked_date, [])
         supplies_for_date = st.session_state.supplies.get(clicked_date, {})
         
-        list_col1, list_col2 = st.columns(2)
-        with list_col1:
-            st.markdown("##### 📝 해야 할 일")
-            if not tasks_for_date:
-                st.write("등록된 할 일이 없습니다.")
-            else:
-                for i, task in enumerate(tasks_for_date):
-                    render_task(clicked_date, i, task, "m")
+        st.markdown("##### 📝 해야 할 일")
+        if not tasks_for_date: st.write("등록된 할 일이 없습니다.")
+        else:
+            for i, task in enumerate(tasks_for_date): render_task(clicked_date, i, task, "m")
+                
+        st.markdown("##### 🎒 챙길 준비물")
+        if not supplies_for_date: st.write("등록된 준비물이 없습니다.")
+        else:
+            for cat_name, items in supplies_for_date.items():
+                is_all_done = len(items) > 0 and all(item['done'] for item in items)
+                prefix = "🔵 " if is_all_done else ""
+                st.write(f"**{prefix}{cat_name}**") 
+                for i, sup in enumerate(items): render_supply(clicked_date, cat_name, i, sup, "m")
                     
-        with list_col2:
-            st.markdown("##### 🎒 챙길 준비물")
-            if not supplies_for_date:
-                st.write("등록된 준비물이 없습니다.")
-            else:
-                for cat_name, items in supplies_for_date.items():
-                    is_all_done = len(items) > 0 and all(item['done'] for item in items)
-                    prefix = "🔵 " if is_all_done else ""
-                    st.write(f"**{prefix}{cat_name}**") 
-                    for i, sup in enumerate(items):
-                        render_supply(clicked_date, cat_name, i, sup, "m")
-                        
         st.write("---")
         st.markdown(f"##### 📝 {clicked_date} 메모장")
         m_note_content = st.session_state.notes.get(clicked_date, "")
         def update_m_notes():
             st.session_state.notes[clicked_date] = st.session_state[f"note_m_{clicked_date}"]
             save_notes_to_db()
-        st.text_area("자유롭게 적어주세요 (자동 저장)", value=m_note_content, key=f"note_m_{clicked_date}", height=150, on_change=update_m_notes)
-            
+        st.text_area("자유롭게 적어주세요", value=m_note_content, key=f"note_m_{clicked_date}", height=120, on_change=update_m_notes)
     else:
-        st.info("👆 위 달력에서 날짜나 배지를 콕 클릭해 상세 일정을 관리하세요.")
+        st.info("👆 위 달력에서 날짜를 콕 클릭해 상세 일정을 관리하세요.")
 
 # ---------------------------------------------------------
 # 6. 화면 3: 템플릿 설정 페이지
 # ---------------------------------------------------------
 elif st.session_state.view_mode == '설정':
     st.subheader("⚙️ 준비물 템플릿 설정")
-    st.write("자주 챙기는 준비물 세트를 내 마음대로 추가, 수정, 삭제할 수 있습니다.")
+    st.write("띄어쓰기로 항목을 구분하여 입력하세요 (예: 텐트 랜턴 침낭)")
     st.write("---")
     
     with st.expander("➕ 새 템플릿 추가하기", expanded=False):
         with st.form("new_template_form"):
             new_tmpl_name = st.text_input("새 템플릿 이름 (예: 🏕️ 캠핑 준비물)")
-            # 💡 [요청 반영] 띄어쓰기로 구분 안내
-            new_tmpl_items = st.text_area("준비물 항목 (띄어쓰기로 구분하여 입력, 예: 텐트 랜턴 침낭)")
+            new_tmpl_items = st.text_area("준비물 항목 (띄어쓰기 구분)")
             if st.form_submit_button("추가하기"):
                 if new_tmpl_name and new_tmpl_items:
-                    # split()을 사용하여 여러 공백이나 줄바꿈도 완벽하게 단어로 쪼갭니다.
                     items_list = [item.strip() for item in new_tmpl_items.split() if item.strip()]
                     st.session_state.templates[new_tmpl_name] = items_list
                     save_templates_to_db()
-                    st.success(f"'{new_tmpl_name}' 템플릿이 추가되었습니다!")
+                    st.success(f"'{new_tmpl_name}' 추가 완료!")
                     st.rerun()
 
     st.markdown("##### 📌 기존 템플릿 관리")
     for tmpl_name, items in list(st.session_state.templates.items()):
         with st.container(border=True):
-            col1, col2 = st.columns([8, 2])
+            col1, col2 = st.columns([7, 3])
             with col1:
                 st.markdown(f"**{tmpl_name}**")
-                items_str = " ".join(items) # 보여줄 때도 띄어쓰기로 연결해서 보여줍니다.
+                items_str = " ".join(items)
                 st.write(items_str)
             with col2:
                 if st.button("🗑️ 삭제", key=f"del_tmpl_{tmpl_name}", use_container_width=True):
@@ -480,9 +392,9 @@ elif st.session_state.view_mode == '설정':
                     save_templates_to_db()
                     st.rerun()
                 
-            with st.popover("✏️ 항목 수정", use_container_width=True):
+            with st.popover("✏️ 수정", use_container_width=True):
                 with st.form(key=f"edit_tmpl_{tmpl_name}"):
-                    edited_items_str = st.text_area("수정할 항목 (띄어쓰기로 구분)", value=items_str)
+                    edited_items_str = st.text_area("수정할 항목 (띄어쓰기 구분)", value=items_str)
                     if st.form_submit_button("저장"):
                         new_list = [item.strip() for item in edited_items_str.split() if item.strip()]
                         st.session_state.templates[tmpl_name] = new_list
